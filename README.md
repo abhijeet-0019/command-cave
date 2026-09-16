@@ -1,0 +1,1 @@
+- objective of this project to create an interface which i can practicle my cli commands, in the age of ai i am facing risk of bhooling the common commands.
