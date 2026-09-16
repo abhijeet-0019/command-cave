@@ -1,0 +1,1221 @@
+<title>Command Drill</title>
+<style>
+  :root{
+    --bg:#f6f4ee;
+    --surface:#ffffff;
+    --surface-2:#efece3;
+    --border:#ddd7c8;
+    --text:#211f1a;
+    --text-dim:#6b6459;
+    --text-dim2:#6b6459;
+    --accent:#a8701e;
+    --accent-ink:#ffffff;
+    --good:#2f8f5b;
+    --good-bg:#e4f3e9;
+    --bad:#c2493a;
+    --bad-bg:#fbe9e6;
+    --code-bg:#efece1;
+    --shadow: 0 1px 2px rgba(30,24,10,.06), 0 6px 20px rgba(30,24,10,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14120f;
+      --surface:#1c1a15;
+      --surface-2:#242019;
+      --border:#38332a;
+      --text:#ece7db;
+      --text-dim:#a49d8c;
+      --text-dim2:#a49d8c;
+      --accent:#e0a94a;
+      --accent-ink:#1c1a15;
+      --good:#5fc98a;
+      --good-bg:#1c3226;
+      --bad:#e2776a;
+      --bad-bg:#3a2220;
+      --code-bg:#242019;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14120f;
+    --surface:#1c1a15;
+    --surface-2:#242019;
+    --border:#38332a;
+    --text:#ece7db;
+    --text-dim:#a49d8c;
+    --text-dim2:#a49d8c;
+    --accent:#e0a94a;
+    --accent-ink:#1c1a15;
+    --good:#5fc98a;
+    --good-bg:#1c3226;
+    --bad:#e2776a;
+    --bad-bg:#3a2220;
+    --code-bg:#242019;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    padding-inline:16px;
+    max-width:840px;
+    margin:0 auto;
+    padding-bottom:48px;
+  }
+  code, .mono, input, .answer-box, .prompt-line{
+    font-family:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  h1,h2,h3{ text-wrap:balance; }
+
+  header.top{
+    padding-block:20px 12px;
+    display:flex; flex-wrap:wrap; gap:14px 20px;
+    align-items:flex-end;
+    justify-content:space-between;
+    border-bottom:1px solid var(--border);
+  }
+  .brand{ display:flex; flex-direction:column; gap:2px; }
+  .brand h1{ margin:0; font-size:1.5rem; letter-spacing:-0.01em; }
+  .brand .tag{ color:var(--text-dim); font-size:.85rem; }
+  .brand .tag .accentword{ color:var(--accent); font-weight:600; }
+
+  .global-stats{ display:flex; gap:18px; align-items:center; }
+  .stat{ text-align:right; }
+  .stat .num{ font-size:1.3rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .stat .lbl{ font-size:.68rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; }
+  .reset-btn{
+    background:none; border:1px solid var(--border); color:var(--text-dim);
+    font-size:.72rem; padding:6px 10px; border-radius:6px; cursor:pointer;
+  }
+  .reset-btn:hover{ border-color:var(--bad); color:var(--bad); }
+  .reset-btn.confirm{ border-color:var(--bad); color:var(--bad); font-weight:700; background:var(--bad-bg); }
+
+  nav.sections{
+    display:flex; gap:10px; margin-block:16px; flex-wrap:wrap;
+  }
+  .section-tab{
+    flex:1 1 200px; text-align:left;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; cursor:pointer; color:var(--text);
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .section-tab .name{ font-weight:600; font-size:.92rem; display:flex; justify-content:space-between; gap:8px;}
+  .section-tab .count{ color:var(--text-dim); font-weight:400; font-size:.8rem; font-variant-numeric:tabular-nums;}
+  .section-tab .bar{ height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden;}
+  .section-tab .bar>span{ display:block; height:100%; background:var(--accent); }
+  .section-tab.active{ border-color:var(--accent); box-shadow:var(--shadow); }
+
+  .toolbar{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .chips{ display:flex; gap:6px; flex-wrap:wrap; }
+  .chip{
+    border:1px solid var(--border); background:var(--surface); color:var(--text-dim);
+    font-size:.75rem; padding:5px 10px; border-radius:999px; cursor:pointer;
+  }
+  .chip.active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:600; }
+  .qcounter{ color:var(--text-dim); font-size:.78rem; font-variant-numeric:tabular-nums; }
+  .mode-row{ margin-bottom:12px; }
+  .mode-row .chip{ font-size:.8rem; padding:6px 14px; }
+  .filter-groups{ display:flex; flex-direction:column; gap:6px; }
+
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:22px; box-shadow:var(--shadow);
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .card-head{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .badge{
+    font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; font-weight:700;
+    padding:3px 8px; border-radius:5px; border:1px solid var(--border); color:var(--text-dim);
+  }
+  .badge.basic{ color:var(--good); border-color:var(--good); }
+  .badge.intermediate{ color:var(--accent); border-color:var(--accent); }
+  .badge.advanced{ color:var(--bad); border-color:var(--bad); }
+  .qid{ color:var(--text-dim2); font-size:.72rem; margin-left:auto; }
+
+  .prompt{ font-size:1.06rem; line-height:1.5; }
+
+  .prompt-line{
+    display:flex; align-items:center; gap:8px;
+    background:var(--code-bg); border:1px solid var(--border); border-radius:8px;
+    padding:10px 12px;
+  }
+  .prompt-line .dollar{ color:var(--accent); font-weight:700; }
+  .prompt-line input{
+    flex:1; background:none; border:none; outline:none; color:var(--text);
+    font-size:.95rem; min-width:0;
+  }
+
+  .btnrow{ display:flex; gap:8px; flex-wrap:wrap; }
+  button.act{
+    border:1px solid var(--border); background:var(--surface); color:var(--text);
+    padding:9px 14px; border-radius:8px; font-size:.85rem; cursor:pointer; font-weight:600;
+  }
+  button.act:hover{ border-color:var(--accent); }
+  button.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  button.act:disabled{ opacity:.45; cursor:not-allowed; }
+
+  .feedback{ border-radius:10px; padding:12px 14px; font-size:.88rem; line-height:1.55; display:none; }
+  .feedback.show{ display:block; }
+  .feedback.good{ background:var(--good-bg); color:var(--good); }
+  .feedback.bad{ background:var(--bad-bg); color:var(--bad); }
+  .feedback.info{ background:var(--surface-2); color:var(--text); }
+  .feedback .answer-box{
+    display:block; margin-top:8px; background:var(--code-bg); border:1px solid var(--border);
+    border-radius:6px; padding:8px 10px; color:var(--text); font-size:.85rem; overflow-x:auto; white-space:pre;
+  }
+  .feedback .note{ margin-top:6px; color:var(--text-dim); font-size:.8rem; }
+  .feedback .explain{ margin-top:8px; color:var(--text); font-size:.83rem; line-height:1.55; }
+  .feedback .explain b{ color:var(--accent); font-weight:700; }
+
+  .hint-box{ font-size:.85rem; color:var(--text-dim); background:var(--surface-2); border-radius:8px; padding:10px 12px; display:none; }
+  .hint-box.show{ display:block; }
+  .hint-box div+div{ margin-top:6px; padding-top:6px; border-top:1px dashed var(--border); }
+
+  footer.done{ text-align:center; color:var(--text-dim); font-size:.85rem; padding:30px 10px; display:none; }
+  footer.done.show{ display:block; }
+
+  .learn-wrap{ display:flex; flex-direction:column; gap:10px; }
+  .learn-title{
+    font-size:1.15rem; font-weight:700; display:flex; flex-direction:column; gap:2px;
+    margin-bottom:4px;
+  }
+  .learn-title .learn-sub{ font-size:.82rem; font-weight:400; color:var(--text-dim); }
+  .learn-heading{
+    margin:14px 0 2px; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--text-dim); padding-bottom:6px; border-bottom:1px solid var(--border);
+  }
+  .learn-heading:first-child{ margin-top:0; }
+  .learn-item{
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:16px; display:flex; flex-direction:column; gap:8px;
+  }
+  .learn-item .learn-head{ display:flex; gap:8px; align-items:center; }
+  .learn-item .learn-prompt{ font-size:.98rem; line-height:1.5; }
+  .learn-item .answer-box{
+    display:block; background:var(--code-bg); border:1px solid var(--border);
+    border-radius:6px; padding:8px 10px; color:var(--text); font-size:.85rem; overflow-x:auto; white-space:pre;
+  }
+  .learn-item .explain{ color:var(--text); font-size:.83rem; line-height:1.55; }
+  .learn-item .explain b{ color:var(--accent); font-weight:700; }
+  .learn-item .note{ color:var(--text-dim); font-size:.8rem; }
+
+  @media (max-width:480px){
+    .global-stats{ gap:12px; }
+    .card{ padding:16px; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<header class="top">
+  <div class="brand">
+    <h1>Command Drill</h1>
+    <div class="tag">Practice recalling <span class="accentword">git</span>, <span class="accentword">linux/EC2/docker</span> and <span class="accentword">dev</span> commands from memory — no autocomplete.</div>
+  </div>
+  <div class="global-stats">
+    <div class="stat"><div class="num" id="stat-accuracy">–</div><div class="lbl">Accuracy</div></div>
+    <div class="stat"><div class="num" id="stat-mastered">0/0</div><div class="lbl">Mastered</div></div>
+    <button class="reset-btn" id="reset-btn" title="Clear all saved progress on this device">Reset progress</button>
+  </div>
+</header>
+
+<nav class="sections" id="section-tabs"></nav>
+
+<div class="mode-row chips" id="mode-chips"></div>
+
+<div class="toolbar" id="practice-toolbar">
+  <div class="filter-groups">
+    <div class="chips" id="filter-chips"></div>
+    <div class="chips" id="diff-chips"></div>
+  </div>
+  <div class="qcounter" id="qcounter"></div>
+</div>
+
+<section class="card" id="card"></section>
+<footer class="done" id="done-footer"></footer>
+<div class="learn-wrap" id="learn-wrap"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- question bank ---------- */
+const SECTIONS = [
+  {id:'git', name:'Git', icon:'⎇'},
+  {id:'ops', name:'Linux · EC2 · Docker', icon:'▤'},
+  {id:'dev', name:'Dev Basics · Vim · Python', icon:'✎'},
+];
+
+const Q = [
+/* ---------------- GIT ---------------- */
+{id:'g1',section:'git',difficulty:'basic',
+ prompt:'Stage every change in your working directory — new, modified, and deleted files — for the next commit.',
+ hints:['The command is `git add`.','There\'s a flag that means literally everything, deletions included — not just `.`','Try `-A` (or `--all`).'],
+ answer:'git add -A', note:'`git add .` also catches new/modified files in modern Git, but `-A`/`--all` is the form that reliably includes deletions too.',
+ explain:'<b>-A / --all</b> stages new, modified, and deleted files across the whole repo — the plain `git add .` form (older Git) could miss deletions outside your current folder.',
+ check:{base:/^(sudo\s+)?git\s+add\b/i, anyOf:[/-A\b/,/--all\b/,/\s\.\s*$/]}},
+{id:'g2',section:'git',difficulty:'basic',
+ prompt:'Commit your staged changes with the message: fix login redirect bug',
+ hints:['Base command: `git commit`.','You need a flag to pass the message inline.','`-m "..."`'],
+ answer:'git commit -m "fix login redirect bug"',
+ explain:'<b>-m</b> passes the commit message inline instead of opening your editor — great for short messages; longer, multi-line messages usually deserve `git commit` alone so the editor opens.',
+ check:{base:/^git\s+commit\b/i, terms:[/-m\s+["'].+["']/]}},
+{id:'g3',section:'git',difficulty:'basic',
+ prompt:'Show the changes in your working directory that haven\'t been staged yet.',
+ hints:['Base command: `git diff`.','No extra flags needed — plain `git diff` compares the working tree to the index.'],
+ answer:'git diff',
+ explain:'No flags: this compares your working directory against the index (what\'s staged) — in effect, "what would I be adding if I ran `git add`?"',
+ check:{base:/^git\s+diff\b/i, forbid:[/--staged|--cached/i]}},
+{id:'g4',section:'git',difficulty:'intermediate',
+ prompt:'Show the changes that are staged, compared against the last commit.',
+ hints:['Still `git diff`, but a flag changes what it compares against.','`--staged` (the older synonym is `--cached`).'],
+ answer:'git diff --staged',
+ explain:'<b>--staged</b> flips the comparison to staged-vs-last-commit — "what would this commit actually contain?"',
+ check:{base:/^git\s+diff\b/i, anyOf:[/--staged\b/,/--cached\b/]}},
+{id:'g5',section:'git',difficulty:'basic',
+ prompt:'Push your local branch `feature-login` to `origin` and set it to track that remote branch for future pushes/pulls.',
+ hints:['Base: `git push`.','A flag sets up tracking on the first push.','`-u origin feature-login`'],
+ answer:'git push -u origin feature-login',
+ explain:'<b>-u</b> (--set-upstream) links your local branch to that remote branch, so future plain `git push` / `git pull` on it know where to go without repeating origin/branch each time.',
+ check:{base:/^git\s+push\b/i, anyOf:[/-u\b/,/--set-upstream\b/], terms:[/feature-login/]}},
+{id:'g6',section:'git',difficulty:'basic',
+ prompt:'Download all new commits/branches from every configured remote, without merging anything into your current branch.',
+ hints:['`git fetch` never merges — that\'s the whole point of it.','Add a flag to hit every remote, not just origin.','`--all`'],
+ answer:'git fetch --all',
+ explain:'<b>--all</b> fetches from every remote you have configured, not just `origin` — useful when you track more than one, like a fork plus its upstream.',
+ check:{base:/^git\s+fetch\b/i}},
+{id:'g7',section:'git',difficulty:'intermediate',
+ prompt:'Update your current branch with the latest remote changes, replaying your local commits on top instead of creating a merge commit.',
+ hints:['Base: `git pull`.','Normally pull = fetch + merge — you want fetch + rebase instead.','`--rebase`'],
+ answer:'git pull --rebase',
+ explain:'<b>--rebase</b> replays your local commits on top of the freshly-fetched history instead of merging, so you avoid an extra merge commit and keep history linear.',
+ check:{base:/^git\s+pull\b/i, long:[/--rebase\b/]}},
+{id:'g8',section:'git',difficulty:'intermediate',
+ prompt:'View the full commit history of all branches as a compact, one-line-per-commit ASCII graph.',
+ hints:['Base: `git log`.','Two flags: one shrinks each commit to one line, one draws the branch graph.','`--oneline --graph`, plus `--all` for every branch.'],
+ answer:'git log --oneline --graph --all',
+ explain:'<b>--oneline</b> compresses each commit to one line, <b>--graph</b> draws the branch/merge structure with ASCII lines, <b>--all</b> includes every branch, not just the one you\'re on.',
+ check:{base:/^git\s+log\b/i, long:[/--oneline\b/,/--graph\b/]}},
+{id:'g9',section:'git',difficulty:'advanced',
+ prompt:'Interactively reorder, squash, or edit your last 3 commits before pushing.',
+ hints:['Base: `git rebase`.','The flag for interactive mode.','`-i HEAD~3`'],
+ answer:'git rebase -i HEAD~3',
+ explain:'<b>-i</b> opens an editable list of the last 3 commits (`HEAD~3`) where you can reorder lines, squash (`s`), reword (`r`), or drop (`d`) commits before they\'re rewritten.',
+ check:{base:/^git\s+rebase\b/i, anyOf:[/-i\b/,/--interactive\b/], terms:[/HEAD~3/i]}},
+{id:'g10',section:'git',difficulty:'advanced',
+ prompt:'Apply the single commit `abc1234` from another branch onto your current branch.',
+ hints:['The subcommand literally means "pick this one commit".','`git cherry-pick <hash>`'],
+ answer:'git cherry-pick abc1234',
+ explain:'Cherry-pick replays one specific commit\'s changes onto your current branch as a new commit — handy for pulling a single fix across branches without merging everything else.',
+ check:{base:/^git\s+cherry-pick\b/i, terms:[/abc1234/]}},
+{id:'g11',section:'git',difficulty:'intermediate',
+ prompt:'Temporarily shelve all uncommitted changes, including new untracked files, so you can switch branches with a clean working tree.',
+ hints:['Base: `git stash`.','By default stash skips untracked files — you need a flag for those too.','`-u` (or `--include-untracked`)'],
+ answer:'git stash -u',
+ explain:'<b>-u</b> (--include-untracked) also stashes files Git isn\'t tracking yet — by default, plain `git stash` only touches changes to already-tracked files.',
+ check:{base:/^git\s+stash\b/i, anyOf:[/-u\b/,/--include-untracked\b/]}},
+{id:'g12',section:'git',difficulty:'basic',
+ prompt:'Reapply the most recently stashed changes and remove them from the stash list.',
+ hints:['Base: `git stash`.','The subcommand that both applies and removes.'],
+ answer:'git stash pop',
+ explain:'<b>pop</b> applies the most recent stash and deletes it from the list; `git stash apply` does the same but keeps the stash around too, in case you need it again.',
+ check:{base:/^git\s+stash\b/i, terms:[/\bpop\b/]}},
+{id:'g13',section:'git',difficulty:'advanced',
+ prompt:'Undo your last commit, but keep all of its changes staged so you can re-commit them differently.',
+ hints:['Base: `git reset`.','The mode that only moves the branch pointer, leaving the index untouched.','`--soft HEAD~1`'],
+ answer:'git reset --soft HEAD~1',
+ explain:'<b>--soft</b> moves the branch pointer back one commit (`HEAD~1`) but leaves the index and working directory untouched — the commit\'s changes reappear as staged, ready to re-commit.',
+ check:{base:/^git\s+reset\b/i, long:[/--soft\b/], terms:[/HEAD~1/i]}},
+{id:'g14',section:'git',difficulty:'advanced',
+ prompt:'Undo your last commit and completely discard those changes — nothing staged, nothing in the working directory. (Destructive — know when you\'d actually reach for this.)',
+ hints:['Base: `git reset`.','The mode that wipes both the index and the working directory.','`--hard HEAD~1`'],
+ answer:'git reset --hard HEAD~1',
+ explain:'<b>--hard</b> moves the branch pointer back and overwrites the index and working directory to match — any uncommitted work in those changes is gone. Use only when you\'re certain.',
+ check:{base:/^git\s+reset\b/i, long:[/--hard\b/], terms:[/HEAD~1/i]}},
+{id:'g15',section:'git',difficulty:'advanced',
+ prompt:'Safely undo a commit that\'s already been pushed and shared with teammates, without rewriting shared history.',
+ hints:['Not `reset` — that rewrites history. This one adds a brand-new commit instead.','`git revert <commit-hash>`'],
+ answer:'git revert <commit-hash>',
+ explain:'Revert creates a brand-new commit that undoes the target commit\'s changes, leaving history intact — the safe choice once something\'s already been pushed and shared, unlike `reset` which rewrites it.',
+ check:{base:/^git\s+revert\b/i}},
+{id:'g16',section:'git',difficulty:'advanced',
+ prompt:'Use a binary search across your commit history to pinpoint which commit first introduced a bug.',
+ hints:['`git bisect start`, then mark commits as you go.','`git bisect bad` / `git bisect good <known-good-hash>`','Naming the subcommand is enough here: `git bisect`'],
+ answer:'git bisect start  →  git bisect bad  →  git bisect good <hash>',
+ explain:'You mark one commit `good` and one `bad`; Git checks out commits in between for you to test, halving the search space each round until it lands on the exact commit that broke things.',
+ check:{base:/^git\s+bisect\b/i}},
+{id:'g17',section:'git',difficulty:'intermediate',
+ prompt:'Find out who last changed each line of `config.py`, and in which commit.',
+ hints:['The command name literally describes what it assigns.','`git blame config.py`'],
+ answer:'git blame config.py',
+ explain:'Shows, line by line, which commit last touched each line and who authored it — useful for tracking down when and why a specific line changed.',
+ check:{base:/^git\s+blame\b/i, terms:[/config\.py/]}},
+{id:'g18',section:'git',difficulty:'advanced',
+ prompt:'You just ran a hard reset and think you lost commits. Find a way to see — and recover — that history.',
+ hints:['Not `git log` — that only shows currently reachable history.','This shows every place HEAD has pointed, even across resets.','`git reflog`'],
+ answer:'git reflog',
+ explain:'Reflog logs every place HEAD has pointed — commits, resets, checkouts — even ones no longer reachable from any branch. It\'s your safety net after a bad reset; find the old commit hash there and `git reset --hard` back to it.',
+ check:{base:/^git\s+reflog\b/i}},
+{id:'g19',section:'git',difficulty:'intermediate',
+ prompt:'Merge `feature-x` into `main`, always creating an explicit merge commit even when a fast-forward is possible.',
+ hints:['Base: `git merge`.','The flag that disables fast-forwarding.','`--no-ff feature-x`'],
+ answer:'git merge --no-ff feature-x',
+ explain:'<b>--no-ff</b> forces a merge commit even when Git could fast-forward, preserving the fact that a feature branch existed — keeps feature history visible instead of flattening it into main\'s line.',
+ check:{base:/^git\s+merge\b/i, long:[/--no-ff\b/], terms:[/feature-x/]}},
+{id:'g20',section:'git',difficulty:'basic',
+ prompt:'Create a new branch called `hotfix-1` and switch to it, in a single command.',
+ hints:['Two valid command families here: the classic one or the newer one.','Classic: `git checkout -b hotfix-1`','Newer: `git switch -c hotfix-1`'],
+ answer:'git checkout -b hotfix-1   (or: git switch -c hotfix-1)',
+ explain:'<b>-b</b>/<b>-c</b> create the branch and switch to it in one step. `switch` is the newer, narrower command introduced to replace `checkout` specifically for branch operations.',
+ check:{anyOf:[/^git\s+checkout\s+-b\s+hotfix-1/i, /^git\s+switch\s+-c\s+hotfix-1/i]}},
+{id:'g21',section:'git',difficulty:'advanced',
+ prompt:'Check out the existing branch `hotfix` into a brand-new working directory at `../hotfix`, so you can work on it in parallel without stashing or switching your current checkout.',
+ hints:['Base: `git worktree add`.','Give it the new directory path, then the branch name.','`../hotfix hotfix`'],
+ answer:'git worktree add ../hotfix hotfix',
+ explain:'Worktrees let multiple branches be checked out at once, each in its own directory, all sharing the same `.git` history — handy for testing a hotfix without disturbing whatever you\'re mid-way through elsewhere.',
+ check:{base:/^git\s+worktree\s+add\b/i, terms:[/\.\.\/hotfix/i, /\bhotfix\b/i]}},
+{id:'g22',section:'git',difficulty:'advanced',
+ prompt:'Interactively review and stage changes to `app.py` hunk-by-hunk, choosing which chunks to include instead of staging the whole file at once.',
+ hints:['Base: `git add`.','The flag for interactive, patch-based staging.','`-p app.py` (or `--patch`)'],
+ answer:'git add -p app.py',
+ explain:'<b>-p</b> (--patch) walks through each changed hunk and asks y/n/s (yes/no/split) before staging it — lets you build a clean, focused commit even when your working tree has several unrelated changes mixed together.',
+ check:{base:/^git\s+add\b/i, anyOf:[/-p\b/,/--patch\b/], terms:[/app\.py/i]}},
+{id:'g23',section:'git',difficulty:'advanced',
+ prompt:'Show commit history as one line per commit in the form: short-hash, author, relative date, subject — using a custom format string instead of a built-in preset.',
+ hints:['Base: `git log`.','The flag for custom formatting.','`--pretty=format:"%h %an %ar %s"`'],
+ answer:'git log --pretty=format:"%h %an %ar %s"',
+ explain:'<b>--pretty=format:</b> lets you build any layout from placeholders — `%h` short hash, `%an` author name, `%ar` relative date, `%s` subject — for when `--oneline` doesn\'t show quite enough.',
+ check:{base:/^git\s+log\b/i, long:[/--pretty=format:/i], terms:[/%h/, /%s/]}},
+
+/* ---------------- OPS: linux / ec2 / docker / search / permissions / transfer ---------------- */
+{id:'o1',section:'ops',difficulty:'basic',
+ prompt:'Recursively search every file under the current directory for the string `TODO`, case-insensitive, showing matching line numbers.',
+ hints:['Base: `grep`.','You need three behaviors: recursive, case-insensitive, line numbers — think `-r`, `-i`, `-n`.','They can be bundled: `-rni`.'],
+ answer:'grep -rni "TODO" .',
+ explain:'<b>-r</b> recurses into subdirectories, <b>-n</b> prefixes matches with line numbers, <b>-i</b> makes the search case-insensitive — a common combo for scanning a whole codebase for a marker.',
+ check:{base:/^(sudo\s+)?grep\b/i, flags:['r','n','i'], terms:[/TODO/i]}},
+{id:'o2',section:'ops',difficulty:'intermediate',
+ prompt:'Search `app.log` for the string `ERROR`, showing 2 lines of context before and after each match.',
+ hints:['Base: `grep`.','One flag gives symmetric context lines around each match.','`-C 2`'],
+ answer:'grep -C 2 "ERROR" app.log',
+ explain:'<b>-C 2</b> shows 2 lines of context on both sides of each match (use <b>-B</b>/<b>-A</b> for before-only / after-only context) — helps you see a match in its surrounding lines.',
+ check:{base:/^grep\b/i, flags:['C'], terms:[/ERROR/i, /app\.log/i]}},
+{id:'o3',section:'ops',difficulty:'basic',
+ prompt:'Count how many lines in `access.log` contain the string `500`.',
+ hints:['Base: `grep`.','A flag outputs a count instead of the matching lines themselves.','`-c`'],
+ answer:'grep -c "500" access.log',
+ explain:'<b>-c</b> replaces the matching lines with just a count of how many lines matched — a quick way to gauge how common something is without scrolling through output.',
+ check:{base:/^grep\b/i, flags:['c'], terms:[/500/, /access\.log/i]}},
+{id:'o4',section:'ops',difficulty:'basic',
+ prompt:'Continuously watch a growing log file (`app.log`) for new lines as they\'re appended.',
+ hints:['Base: `tail`.','The flag that keeps the stream open and "follows" new writes.','`-f`'],
+ answer:'tail -f app.log',
+ explain:'<b>-f</b> keeps the file open and prints new lines as they\'re written — the standard way to watch a live log.',
+ check:{base:/^tail\b/i, flags:['f'], terms:[/app\.log/i]}},
+{id:'o5',section:'ops',difficulty:'basic',
+ prompt:'Show the last 100 lines of `access.log`.',
+ hints:['Base: `tail`.','The flag that takes a line count.','`-n 100`'],
+ answer:'tail -n 100 access.log',
+ explain:'<b>-n 100</b> sets how many lines from the end to print; without it, `tail` defaults to just the last 10.',
+ check:{base:/^tail\b/i, terms:[/-n\s*100\b/, /access\.log/i]}},
+{id:'o6',section:'ops',difficulty:'basic',
+ prompt:'Find every file named exactly `.env` anywhere under `/home`, without the search halting on folders you\'re not allowed to read.',
+ hints:['Base: `find <path>`.','Match by filename with `-name`.','Silence permission errors by redirecting stderr: `2>/dev/null`.'],
+ answer:'find /home -name ".env" 2>/dev/null',
+ explain:'<b>-name</b> matches by filename pattern (quote wildcards so the shell doesn\'t expand them first); <b>2>/dev/null</b> throws away "permission denied" error messages so they don\'t clutter the output.',
+ check:{base:/^find\s+\/home\b/i, terms:[/-name\b/, /\.env/i]}},
+{id:'o7',section:'ops',difficulty:'intermediate',
+ prompt:'Find all files modified in the last 24 hours, starting from the current directory.',
+ hints:['Base: `find .`','The time-based test flag for modification time.','`-mtime -1` (less than 1 day ago).'],
+ answer:'find . -mtime -1',
+ explain:'<b>-mtime -1</b> means "modified less than 1 day ago" — the leading `-` makes it "less than", a bare `1` means "exactly 1 day ago", and `+1` means "more than 1 day ago".',
+ check:{base:/^find\s+\./i, terms:[/-mtime\s*-?1\b/]}},
+{id:'o8',section:'ops',difficulty:'intermediate',
+ prompt:'Find all files larger than 100MB anywhere under `/var`.',
+ hints:['Base: `find /var`','The size test flag, with a `+` meaning "greater than".','`-size +100M`'],
+ answer:'find /var -size +100M',
+ explain:'<b>+100M</b> means "larger than 100 megabytes" — the same `+`/`-` prefix convention as `-mtime` (greater-than / less-than).',
+ check:{base:/^find\s+\/var\b/i, terms:[/-size\s*\+100M/i]}},
+{id:'o9',section:'ops',difficulty:'advanced',
+ prompt:'Find every `.py` file under the current directory, then search inside them for the ones that import `os` — chaining `find` and `grep` together.',
+ hints:['Two valid shapes: `find ... -exec grep ... {} \\;` or `find ... | xargs grep ...`','Either way you need `find -name "*.py"` and a `grep` for `import os`.'],
+ answer:'find . -name "*.py" -exec grep -l "import os" {} \\;',
+ explain:'<b>-exec ... {} \\;</b> runs a command once per matching file, with `{}` substituted as the filename and `\\;` marking the end of that command — here it runs `grep` on every matched `.py` file.',
+ check:{base:/^find\s+\./i, terms:[/-name\b/,/\*\.py/i, /grep\b/i, /import os/i]}},
+{id:'o10',section:'ops',difficulty:'basic',
+ prompt:'View a file\'s permissions, owner, and group in long-listing format.',
+ hints:['Base: `ls`.','The long-format flag.','`-l`'],
+ answer:'ls -l file.txt',
+ explain:'<b>-l</b> switches to long format: permissions, owner, group, size, and modified date per entry, instead of just names.',
+ check:{base:/^ls\b/i, flags:['l']}},
+{id:'o11',section:'ops',difficulty:'intermediate',
+ prompt:'Set permissions on `deploy.sh` so the owner can read/write/execute, the group can read/execute, and others get nothing.',
+ hints:['Think in octal: owner=7, group=5, others=0.','Or symbolically: `u=rwx,g=rx,o=`','Numeric form: `chmod 750 deploy.sh`'],
+ answer:'chmod 750 deploy.sh   (or: chmod u=rwx,g=rx,o= deploy.sh)',
+ explain:'Octal permissions are three digits — owner, group, others — each a sum of read(4)+write(2)+execute(1). <b>750</b> = owner rwx(7), group r-x(5), others none(0).',
+ check:{base:/^chmod\b/i, anyOf:[/\b750\b/, /u\s*=\s*rwx\s*,\s*g\s*=\s*rx\s*,\s*o\s*=/i], terms:[/deploy\.sh/i]}},
+{id:'o12',section:'ops',difficulty:'basic',
+ prompt:'Make `deploy.sh` executable for everyone.',
+ hints:['Base: `chmod`.','The symbolic shortcut for "add execute, for all".','`+x` (optionally `a+x`).'],
+ answer:'chmod +x deploy.sh',
+ explain:'<b>+x</b> adds the execute bit without touching read/write permissions — symbolic mode (`+`/`-`/`=`) is often simpler than octal when you only want to change one bit.',
+ check:{base:/^chmod\b/i, anyOf:[/\+x\b/], terms:[/deploy\.sh/i]}},
+{id:'o13',section:'ops',difficulty:'intermediate',
+ prompt:'Recursively change the owner and group of `/srv/app` to user `ubuntu`, group `ubuntu`.',
+ hints:['Base: `chown`.','The recursive flag.','`-R ubuntu:ubuntu /srv/app`'],
+ answer:'chown -R ubuntu:ubuntu /srv/app',
+ explain:'<b>-R</b> applies the ownership change recursively to every file and subdirectory inside the target path, not just the path itself.',
+ check:{base:/^chown\b/i, flags:['R'], terms:[/ubuntu:ubuntu/i, /\/srv\/app/i]}},
+{id:'o14',section:'ops',difficulty:'intermediate',
+ prompt:'Copy a local file `deploy.tar.gz` to `/home/ec2-user/` on a remote EC2 instance at `1.2.3.4`, authenticating with `key.pem`.',
+ hints:['Base: `scp`.','The key/identity flag comes first, then `local  remote`.','Remote target syntax: `user@host:/path`.'],
+ answer:'scp -i key.pem deploy.tar.gz ec2-user@1.2.3.4:/home/ec2-user/',
+ explain:'<b>-i</b> points to the private key used to authenticate. Argument order is always `source destination`, and a remote path is written as `user@host:/path`.',
+ check:{base:/^scp\b/i, flags:['i'], terms:[/key\.pem/i, /deploy\.tar\.gz/i, /ec2-user@1\.2\.3\.4:/i]}},
+{id:'o15',section:'ops',difficulty:'intermediate',
+ prompt:'Copy `/var/log/app.log` FROM that same EC2 instance back down to your current local directory.',
+ hints:['Same `scp -i key.pem`, but now the remote path comes first, local `.` second.'],
+ answer:'scp -i key.pem ec2-user@1.2.3.4:/var/log/app.log .',
+ explain:'Same flag, reversed direction: `scp` always reads as `source destination`, so putting the `user@host:/path` first and `.` second copies from remote to local.',
+ check:{base:/^scp\b/i, flags:['i'], terms:[/key\.pem/i, /ec2-user@1\.2\.3\.4:\/var\/log\/app\.log/i]}},
+{id:'o16',section:'ops',difficulty:'advanced',
+ prompt:'Sync your local `./build/` directory to `/var/www/app/` on a remote server over SSH with `key.pem`, transferring only changed files and preserving permissions/timestamps.',
+ hints:['Base: `rsync`.','Flags for archive-mode + verbose + compress: `-avz`','Route it over a custom ssh command: `-e "ssh -i key.pem"`'],
+ answer:'rsync -avz -e "ssh -i key.pem" ./build/ ec2-user@1.2.3.4:/var/www/app/',
+ explain:'<b>-a</b> (archive) preserves permissions/timestamps/symlinks and recurses, <b>-v</b> is verbose, <b>-z</b> compresses data in transit; <b>-e "ssh -i key.pem"</b> tells rsync to tunnel over SSH using that specific key.',
+ check:{base:/^rsync\b/i, flags:['a','v','z'], terms:[/-e\s+["']ssh/i, /key\.pem/i]}},
+{id:'o17',section:'ops',difficulty:'basic',
+ prompt:'SSH into an EC2 instance at `1.2.3.4` as user `ec2-user`, using `key.pem` for authentication.',
+ hints:['Base: `ssh`.','The identity-file flag.','`-i key.pem user@host`'],
+ answer:'ssh -i key.pem ec2-user@1.2.3.4',
+ explain:'<b>-i</b> selects which private key to authenticate with — needed whenever you\'re not using the default `~/.ssh/id_rsa`.',
+ check:{base:/^ssh\b/i, flags:['i'], terms:[/key\.pem/i, /ec2-user@1\.2\.3\.4/i]}},
+{id:'o18',section:'ops',difficulty:'basic',
+ prompt:'List every Docker container on the system, including ones that have stopped.',
+ hints:['Base: `docker ps`.','By default it only shows running containers — one flag reveals all of them.'],
+ answer:'docker ps -a',
+ explain:'`docker ps` alone only shows running containers; <b>-a</b> (all) also lists stopped/exited ones.',
+ check:{base:/^docker\s+ps\b/i, flags:['a']}},
+{id:'o19',section:'ops',difficulty:'intermediate',
+ prompt:'Stream real-time logs from a running container named `web`.',
+ hints:['Base: `docker logs`.','The follow flag.','`-f web`'],
+ answer:'docker logs -f web',
+ explain:'<b>-f</b> (follow) streams new log output live, the same idea as `tail -f` but for a container\'s stdout/stderr.',
+ check:{base:/^docker\s+logs\b/i, flags:['f'], terms:[/\bweb\b/]}},
+{id:'o20',section:'ops',difficulty:'intermediate',
+ prompt:'Get an interactive shell inside the running `web` container.',
+ hints:['Base: `docker exec`.','Two flags: interactive + allocate a tty.','`-it web bash`'],
+ answer:'docker exec -it web bash',
+ explain:'<b>-i</b> keeps stdin open, <b>-t</b> allocates a pseudo-terminal — together they give you an interactive shell session inside the running container.',
+ check:{base:/^docker\s+exec\b/i, flags:['i','t'], terms:[/\bweb\b/, /bash|\bsh\b/]}},
+{id:'o21',section:'ops',difficulty:'intermediate',
+ prompt:'Build a Docker image from the Dockerfile in the current directory, tagging it `myapp:1.0`.',
+ hints:['Base: `docker build`.','The tag flag.','`-t myapp:1.0 .`'],
+ answer:'docker build -t myapp:1.0 .',
+ explain:'<b>-t</b> tags the built image with a name and optional version (`name:tag`) so you can reference it later instead of by its long hash.',
+ check:{base:/^docker\s+build\b/i, flags:['t'], terms:[/myapp:1\.0/i]}},
+{id:'o22',section:'ops',difficulty:'advanced',
+ prompt:'Free up disk space by removing all stopped containers, unused networks, and unused images in one command.',
+ hints:['Base: `docker system prune`.','Add `-a` if you also want unused (not just dangling) images gone.'],
+ answer:'docker system prune -a',
+ explain:'Removes stopped containers, unused networks, and dangling images by default; <b>-a</b> extends that to remove any image not currently used by a container, not just dangling ones.',
+ check:{base:/^docker\s+system\s+prune\b/i}},
+{id:'o23',section:'ops',difficulty:'basic',
+ prompt:'Check disk usage of the current directory, human-readable, one directory level deep.',
+ hints:['Base: `du`.','Human-readable + depth-limit flags.','`-h --max-depth=1` (or the shortcut `du -sh */`)'],
+ answer:'du -h --max-depth=1',
+ explain:'<b>-h</b> prints sizes in human-readable units (K/M/G); <b>--max-depth=1</b> stops it from recursing past one directory level, giving a per-folder summary instead of every single file.',
+ check:{base:/^du\b/i, anyOf:[/--max-depth\s*=?\s*1\b/, /-d\s*1\b/, /-sh\b.*\*/]}},
+{id:'o24',section:'ops',difficulty:'basic',
+ prompt:'Check overall free/used disk space across all mounted filesystems, in human-readable sizes.',
+ hints:['Base: `df`.','Human-readable flag.','`-h`'],
+ answer:'df -h',
+ explain:'<b>-h</b> means human-readable — without it, `df` reports raw block counts, which are hard to read at a glance.',
+ check:{base:/^df\b/i, flags:['h']}},
+{id:'o25',section:'ops',difficulty:'intermediate',
+ prompt:'Find out which process is listening on port 8080.',
+ hints:['Two valid tools work here: `lsof` or `ss`.','`sudo lsof -i :8080`','or `ss -tulpn | grep 8080`'],
+ answer:'sudo lsof -i :8080   (or: ss -tulpn | grep 8080)',
+ explain:'`lsof -i :8080` lists processes with network connections on that port. `ss -tulpn` lists (t)cp/(u)dp listening sockets with (p)rocess info, (n)umeric ports instead of resolved names.',
+ check:{anyOf:[/lsof\s+-i\s*:?8080/i, /ss\s+-\w*t\w*.*8080/i]}},
+{id:'o26',section:'ops',difficulty:'basic',
+ prompt:'Check whether the `nginx` service is currently running.',
+ hints:['Base: `systemctl status`.','Just name the service after it.'],
+ answer:'systemctl status nginx',
+ explain:'Shows whether the service is active/inactive/failed, its recent log lines, and its process ID — the first command to reach for when something\'s not responding.',
+ check:{base:/^systemctl\s+status\b/i, terms:[/\bnginx\b/i]}},
+{id:'o27',section:'ops',difficulty:'basic',
+ prompt:'Restart the `nginx` service after changing its config.',
+ hints:['Base: `systemctl restart`.','You\'ll usually need elevated privileges.','`sudo systemctl restart nginx`'],
+ answer:'sudo systemctl restart nginx',
+ explain:'`restart` stops then starts the service in one step — use `reload` instead when the service supports re-reading its config without dropping active connections.',
+ check:{base:/^(sudo\s+)?systemctl\s+restart\b/i, terms:[/\bnginx\b/i]}},
+{id:'o28',section:'ops',difficulty:'intermediate',
+ prompt:'Make sure the `nginx` service automatically starts on every boot, without starting it right now.',
+ hints:['Base: `systemctl enable`.','On its own, `enable` only sets up the boot-time symlink — it doesn\'t start anything immediately.'],
+ answer:'sudo systemctl enable nginx',
+ explain:'`enable` just wires up the boot-time symlinks so the service starts on the next reboot; add `--now` (`enable --now nginx`) if you also want it started immediately.',
+ check:{base:/^(sudo\s+)?systemctl\s+enable\b/i, terms:[/\bnginx\b/i]}},
+{id:'o29',section:'ops',difficulty:'intermediate',
+ prompt:'Stream live logs for the `nginx` service, the same way `tail -f` streams a log file.',
+ hints:['Base: `journalctl`.','The flag that selects a specific systemd unit, plus the follow flag.','`-u nginx -f`'],
+ answer:'journalctl -u nginx -f',
+ explain:'<b>-u</b> filters the journal down to just that unit\'s log entries; <b>-f</b> follows it live, exactly like `tail -f` does for a plain file.',
+ check:{base:/^journalctl\b/i, flags:['u','f'], terms:[/\bnginx\b/i]}},
+{id:'o30',section:'ops',difficulty:'advanced',
+ prompt:'View system-wide journal logs from only the last hour.',
+ hints:['Base: `journalctl`.','The flag that filters by time, taking a human-readable duration.','`--since "1 hour ago"`'],
+ answer:'journalctl --since "1 hour ago"',
+ explain:'<b>--since</b> (paired optionally with <b>--until</b>) accepts human-readable time expressions like `"1 hour ago"`, `"09:00"`, or `"yesterday"` — no need to calculate exact timestamps yourself.',
+ check:{base:/^journalctl\b/i, long:[/--since\b/]}},
+{id:'o31',section:'ops',difficulty:'basic',
+ prompt:'Start a new, named tmux session called `deploy` — so you can find it again later even after disconnecting.',
+ hints:['Base: `tmux new`.','The flag that names the session.','`-s deploy`'],
+ answer:'tmux new -s deploy',
+ explain:'<b>-s</b> gives the session a name instead of a default number, so `tmux attach -t deploy` can find it later — essential once you have more than one session running.',
+ check:{base:/^tmux\s+new\b/i, terms:[/-s\s+deploy/i]}},
+{id:'o32',section:'ops',difficulty:'basic',
+ prompt:'Detach from your current tmux session — leaving whatever\'s running inside it alive in the background — without closing your SSH connection.',
+ hints:['It\'s a two-key chord, not a typed command.','Prefix key first (default Ctrl+B), then a letter for "detach".'],
+ answer:'Ctrl+B, then D',
+ explain:'Tmux commands go through a "prefix" key (Ctrl+B by default) followed by a single letter — `d` detaches, leaving the session (and everything running in it) alive for you to `attach` back into later.',
+ check:{terms:[/ctrl\s*\+?\s*b|\^b|c-b/i, /\bd\b/i]}},
+{id:'o33',section:'ops',difficulty:'intermediate',
+ prompt:'Reattach to your existing tmux session named `deploy`.',
+ hints:['Base: `tmux attach`.','The flag that targets a session by name.','`-t deploy`'],
+ answer:'tmux attach -t deploy',
+ explain:'<b>-t</b> targets a specific session by name; without it, `tmux attach` just grabs the most recently used session.',
+ check:{base:/^tmux\s+attach\b/i, terms:[/-t\s+deploy/i]}},
+{id:'o34',section:'ops',difficulty:'basic',
+ prompt:'List all of your EC2 instances and their current state.',
+ hints:['Base: `aws ec2`.','The subcommand that lists/describes instances.'],
+ answer:'aws ec2 describe-instances',
+ explain:'Returns full JSON detail on every instance in the current region; add `--query` (a JMESPath expression) to slice out just the fields you care about, like instance ID and public IP.',
+ check:{base:/^aws\s+ec2\s+describe-instances\b/i}},
+{id:'o35',section:'ops',difficulty:'intermediate',
+ prompt:'Stop the EC2 instance with ID `i-0123456789abcdef0`.',
+ hints:['Base: `aws ec2 stop-instances`.','The flag that takes one or more instance IDs.','`--instance-ids i-0123456789abcdef0`'],
+ answer:'aws ec2 stop-instances --instance-ids i-0123456789abcdef0',
+ explain:'<b>--instance-ids</b> accepts one or more space-separated IDs, so you can stop several instances in a single call. `start-instances` is the mirror command to bring it back up.',
+ check:{base:/^aws\s+ec2\s+stop-instances\b/i, long:[/--instance-ids\b/], terms:[/i-0123456789abcdef0/i]}},
+{id:'o36',section:'ops',difficulty:'basic',
+ prompt:'Upload a local file `report.csv` to the S3 bucket `my-bucket`, under the key `reports/report.csv`.',
+ hints:['Base: `aws s3 cp`.','Order is `source destination`, just like regular `cp`.','S3 paths look like `s3://bucket/key`.'],
+ answer:'aws s3 cp report.csv s3://my-bucket/reports/report.csv',
+ explain:'`aws s3 cp` mirrors the Unix `cp` interface — the destination just happens to be an `s3://bucket/key` path instead of a local one.',
+ check:{base:/^aws\s+s3\s+cp\b/i, terms:[/report\.csv/i, /s3:\/\/my-bucket\/reports\/report\.csv/i]}},
+{id:'o37',section:'ops',difficulty:'basic',
+ prompt:'Download `reports/report.csv` from the `my-bucket` S3 bucket down to your current directory.',
+ hints:['Same `aws s3 cp`, but the S3 path is now the source and `.` is the destination.'],
+ answer:'aws s3 cp s3://my-bucket/reports/report.csv .',
+ explain:'Same command, reversed direction — `aws s3 cp` always reads as `source destination`, so putting the `s3://...` path first copies down to local instead of up to S3.',
+ check:{base:/^aws\s+s3\s+cp\b/i, terms:[/s3:\/\/my-bucket\/reports\/report\.csv/i]}},
+{id:'o38',section:'ops',difficulty:'intermediate',
+ prompt:'Sync your local `./dist/` folder up to `s3://my-bucket/site/`, uploading only new or changed files (not everything, every time).',
+ hints:['Base: `aws s3 sync`.','Same `source destination` order as `cp`.'],
+ answer:'aws s3 sync ./dist/ s3://my-bucket/site/',
+ explain:'Unlike `cp`, `sync` compares timestamps/sizes first and only transfers what actually changed — the right tool for repeatedly deploying a static site or build output.',
+ check:{base:/^aws\s+s3\s+sync\b/i, terms:[/dist/i, /s3:\/\/my-bucket\/site/i]}},
+{id:'o39',section:'ops',difficulty:'advanced',
+ prompt:'Tail live logs from the CloudWatch log group `/my-app/prod`.',
+ hints:['Base: `aws logs tail`.','The flag that keeps it streaming, like `tail -f`.','`--follow`'],
+ answer:'aws logs tail /my-app/prod --follow',
+ explain:'<b>--follow</b> keeps polling for new log events and streams them, the CloudWatch equivalent of `tail -f` on a local file.',
+ check:{base:/^aws\s+logs\s+tail\b/i, long:[/--follow\b/], terms:[/\/my-app\/prod/i]}},
+{id:'o40',section:'ops',difficulty:'basic',
+ prompt:'Set up your AWS CLI credentials and default region interactively, for the first time on a new machine.',
+ hints:['Base: `aws`.','The subcommand that walks you through access key, secret key, region, and output format.'],
+ answer:'aws configure',
+ explain:'Prompts for your Access Key ID, Secret Access Key, default region, and output format, then saves them to `~/.aws/credentials` and `~/.aws/config` for every future `aws` call to use.',
+ check:{base:/^aws\s+configure\b/i}},
+
+/* ---------------- DEV: linux basics / vim / python ---------------- */
+{id:'d1',section:'dev',difficulty:'basic',
+ prompt:'Create a new empty file named `notes.txt`.',
+ hints:['Base: `touch`.'],
+ answer:'touch notes.txt',
+ explain:'`touch` creates the file if it doesn\'t exist, or just updates its modified timestamp if it does — it never overwrites existing content.',
+ check:{base:/^touch\b/i, terms:[/notes\.txt/i]}},
+{id:'d2',section:'dev',difficulty:'basic',
+ prompt:'Create the nested directory path `project/src/utils` in one command, even though the parent folders don\'t exist yet.',
+ hints:['Base: `mkdir`.','The flag that creates parent directories as needed.','`-p`'],
+ answer:'mkdir -p project/src/utils',
+ explain:'<b>-p</b> creates any missing parent directories along the path, and doesn\'t error out if the final directory already exists.',
+ check:{base:/^mkdir\b/i, flags:['p'], terms:[/project\/src\/utils/i]}},
+{id:'d3',section:'dev',difficulty:'basic',
+ prompt:'Open (or create) `app.py` in Vim.',
+ hints:['`vi` or `vim`, followed by the filename.'],
+ answer:'vim app.py',
+ explain:'Opens the file in Vim\'s normal mode; if `app.py` doesn\'t exist yet, Vim creates it in memory and writes it to disk the first time you save.',
+ check:{base:/^(vi|vim)\b/i, terms:[/app\.py/i]}},
+{id:'d4',section:'dev',difficulty:'basic',
+ prompt:'Inside Vim, in normal mode: save your changes and quit.',
+ hints:['Command-mode commands start with `:`','Write, then quit.','`:wq`'],
+ answer:':wq',
+ explain:'`:w` writes (saves) the file, `:q` quits — chained together they save and exit in one step.',
+ check:{terms:[/:wq/i]}},
+{id:'d5',section:'dev',difficulty:'basic',
+ prompt:'Inside Vim: quit without saving your changes, even though the file has unsaved edits.',
+ hints:['Plain `:q` refuses when there are unsaved changes.','Force it.'],
+ answer:':q!',
+ explain:'The `!` forces the action, overriding Vim\'s normal refusal to discard unsaved changes.',
+ check:{terms:[/:q!/]}},
+{id:'d6',section:'dev',difficulty:'basic',
+ prompt:'Inside Vim, in normal mode: delete the entire current line.',
+ hints:['Two-key normal-mode command, both keys the same letter.'],
+ answer:'dd',
+ explain:'Doubling an operator letter in Vim applies it to the whole line: `dd` deletes a line, `yy` yanks (copies) a line, `cc` changes (replaces) a line.',
+ check:{terms:[/^dd$/]}},
+{id:'d7',section:'dev',difficulty:'intermediate',
+ prompt:'Inside Vim: copy (yank) the current line, then paste a copy of it directly below.',
+ hints:['Yank the line first.','Then paste below the cursor.'],
+ answer:'yy then p',
+ explain:'`yy` yanks (copies) the current line into Vim\'s default register; lowercase `p` pastes after the cursor/current line, while capital `P` pastes before it.',
+ check:{terms:[/yy/, /\bp\b/]}},
+{id:'d8',section:'dev',difficulty:'intermediate',
+ prompt:'Inside Vim: replace every occurrence of `foo` with `bar`, on every line of the file.',
+ hints:['Command-mode `:substitute`.','Range `%` = whole file, and the `g` flag = every match per line, not just the first.','`:%s/foo/bar/g`'],
+ answer:':%s/foo/bar/g',
+ explain:'`:s` is substitute; `%` as the range means "every line in the file" (omit it and only the current line is affected); the trailing `g` means every match per line, not just the first.',
+ check:{terms:[/:%s\/foo\/bar\/g/i]}},
+{id:'d9',section:'dev',difficulty:'basic',
+ prompt:'Inside Vim, in normal mode: search forward through the file for the word `config`.',
+ hints:['Forward search starts with this character.'],
+ answer:'/config',
+ explain:'`/` starts a forward search; `n` repeats it forward, `N` repeats it backward. `?` runs the same kind of search but backward from your cursor.',
+ check:{terms:[/\/config\b/]}},
+{id:'d10',section:'dev',difficulty:'basic',
+ prompt:'Inside Vim, in normal mode: jump straight to the last line of the file.',
+ hints:['Single uppercase letter.'],
+ answer:'G',
+ explain:'Uppercase `G` jumps to the last line; a number before it (e.g. `10G`) jumps to that specific line number instead.',
+ check:{terms:[/^G$/]}},
+{id:'d11',section:'dev',difficulty:'basic',
+ prompt:'Create a new Python virtual environment named `venv`, then activate it.',
+ hints:['Creation: `python3 -m venv venv`','Activation (Linux/macOS): `source venv/bin/activate`'],
+ answer:'python3 -m venv venv && source venv/bin/activate',
+ explain:'`python3 -m venv venv` creates an isolated Python environment in a folder named `venv`; `source .../activate` rewrites your shell\'s PATH so `python`/`pip` point inside it instead of the system install.',
+ check:{terms:[/python3?\s+-m\s+venv\s+venv/i, /source\s+venv\/bin\/activate/i]}},
+{id:'d12',section:'dev',difficulty:'basic',
+ prompt:'Deactivate the currently active Python virtual environment.',
+ hints:['It\'s a single word — no arguments.'],
+ answer:'deactivate',
+ explain:'Restores your shell\'s original PATH — it\'s a shell function defined by the activation script itself, not a separate program.',
+ check:{terms:[/^deactivate\b/i]}},
+{id:'d13',section:'dev',difficulty:'basic',
+ prompt:'Install every package listed in `requirements.txt` into the active environment.',
+ hints:['Base: `pip install`.','The flag that reads packages from a file.','`-r requirements.txt`'],
+ answer:'pip install -r requirements.txt',
+ explain:'<b>-r</b> tells pip to read a list of `package==version` lines from the given file, instead of naming packages directly on the command line.',
+ check:{base:/^pip3?\s+install\b/i, flags:['r'], terms:[/requirements\.txt/i]}},
+{id:'d14',section:'dev',difficulty:'intermediate',
+ prompt:'Save every currently installed package (with exact versions) into `requirements.txt`.',
+ hints:['Base: `pip freeze`.','Redirect its output into the file.'],
+ answer:'pip freeze > requirements.txt',
+ explain:'Lists every installed package with its exact version, in the same `name==version` format `pip install -r` expects — the standard way to snapshot or reproduce an environment.',
+ check:{base:/^pip3?\s+freeze\b/i, terms:[/>\s*requirements\.txt/i]}},
+{id:'d15',section:'dev',difficulty:'basic',
+ prompt:'Set an environment variable `API_KEY` to `your_value`, available to this shell session and any child processes.',
+ hints:['Base: `export`.','`NAME=value` syntax.'],
+ answer:'export API_KEY=your_value',
+ explain:'`export` makes the variable available to child processes too (like scripts you run) — without it, the variable stays local to just your current shell.',
+ check:{base:/^export\b/i, terms:[/API_KEY\s*=/i]}},
+{id:'d16',section:'dev',difficulty:'intermediate',
+ prompt:'Create a shortcut so typing `ll` runs `ls -alF`.',
+ hints:['Base: `alias`.','`name=\'command\'` syntax.'],
+ answer:"alias ll='ls -alF'",
+ explain:'Defines `ll` as shorthand that expands to `ls -alF` whenever you type it — lasts only for this session unless added to a shell startup file like `.bashrc`.',
+ check:{base:/^alias\b/i, terms:[/ll\s*=/i, /ls\s+-al?F?\b/i]}},
+{id:'d17',section:'dev',difficulty:'intermediate',
+ prompt:'Compress the directory `mydir/` into a single gzipped tar archive called `mydir.tar.gz`.',
+ hints:['Base: `tar`.','Flags: create, gzip, file (verbose optional).','`-czvf mydir.tar.gz mydir/`'],
+ answer:'tar -czvf mydir.tar.gz mydir/',
+ explain:'<b>-c</b> create, <b>-z</b> compress with gzip, <b>-v</b> verbose (list files as they\'re added), <b>-f</b> the archive filename comes next. The letter order doesn\'t matter, but `f` must be immediately followed by the filename.',
+ check:{base:/^tar\b/i, flags:['c','z','f'], terms:[/mydir\.tar\.gz/i]}},
+{id:'d18',section:'dev',difficulty:'basic',
+ prompt:'Extract `mydir.tar.gz` into the current directory.',
+ hints:['Base: `tar`.','Flags: extract, gzip, file.','`-xzvf mydir.tar.gz`'],
+ answer:'tar -xzvf mydir.tar.gz',
+ explain:'Same flag family in extract mode: <b>-x</b> extract, <b>-z</b> decompress gzip, <b>-v</b> verbose, <b>-f</b> archive filename.',
+ check:{base:/^tar\b/i, flags:['x','z','f'], terms:[/mydir\.tar\.gz/i]}},
+{id:'d19',section:'dev',difficulty:'advanced',
+ prompt:'Run `script.py` in the background so it survives you logging out, redirecting both stdout and stderr into `out.log`.',
+ hints:['Base: `nohup python3 script.py`.','Redirect stdout to the file, then fold stderr into stdout too: `> out.log 2>&1`','End with `&` to background it.'],
+ answer:'nohup python3 script.py > out.log 2>&1 &',
+ explain:'`nohup` stops the process from receiving a hangup signal when your terminal closes; `> out.log 2>&1` redirects stdout to the file, then points stderr at wherever stdout now goes; the trailing `&` backgrounds it so your shell isn\'t blocked.',
+ check:{base:/^nohup\s+python3?\s+script\.py/i, terms:[/>\s*out\.log/i, /2>&1/, /&\s*$/]}},
+{id:'d20',section:'dev',difficulty:'basic',
+ prompt:'Check which `python3` executable is currently active on your PATH.',
+ hints:['Base command that resolves an executable\'s path.'],
+ answer:'which python3',
+ explain:'Searches your PATH directories in order and prints the first matching executable — useful for confirming you\'re using the venv\'s Python, not the system one.',
+ check:{base:/^which\b/i, terms:[/python3?\b/i]}},
+{id:'d21',section:'dev',difficulty:'intermediate',
+ prompt:'Write the crontab line that runs `/home/ubuntu/backup.sh` every day at 2:30 AM.',
+ hints:['Cron fields go: minute hour day month weekday, then the command.','2:30 AM = minute 30, hour 2.','`30 2 * * * /home/ubuntu/backup.sh`'],
+ answer:'30 2 * * * /home/ubuntu/backup.sh',
+ explain:'The five fields are minute(0-59) hour(0-23) day-of-month month day-of-week, each `*` meaning "every". `30 2 * * *` fires once a day at 02:30 — every day of every month.',
+ check:{terms:[/^30\s+2\s+\*\s+\*\s+\*\s+/, /backup\.sh/]}},
+{id:'d22',section:'dev',difficulty:'basic',
+ prompt:'List the current user\'s active cron jobs.',
+ hints:['Base: `crontab`.','The flag that lists instead of edits.','`-l`'],
+ answer:'crontab -l',
+ explain:'<b>-l</b> prints the current user\'s crontab without opening an editor; `crontab -e` is the one that edits it.',
+ check:{base:/^crontab\b/i, flags:['l']}},
+{id:'d23',section:'dev',difficulty:'basic',
+ prompt:'Jump back to the previous directory you were in, right before your last `cd`.',
+ hints:['Base: `cd`.','One special argument means "the last directory".'],
+ answer:'cd -',
+ explain:'`-` expands to `$OLDPWD` — the directory you were in before your last `cd` — so `cd -` toggles you back and forth between two directories.',
+ check:{terms:[/^cd\s+-\s*$/]}},
+{id:'d24',section:'dev',difficulty:'intermediate',
+ prompt:'Jump into `/var/www`, while remembering your current directory on a stack so you can pop straight back to it later — without relying on `cd -`.',
+ hints:['Base: `pushd`.','It pushes your current directory onto a stack, then changes into the new one.','Later, `popd` returns you to it.'],
+ answer:'pushd /var/www',
+ explain:'`pushd` changes directory like `cd` but also remembers where you came from on a stack; `popd` pops the stack and takes you back — useful when bouncing between more than two places.',
+ check:{base:/^pushd\b/i, terms:[/\/var\/www/i]}},
+{id:'d25',section:'dev',difficulty:'intermediate',
+ prompt:'You just ran a command and got "Permission denied". Re-run that exact last command, prefixed with `sudo`, without retyping it.',
+ hints:['`!!` expands to your previous command.','Put `sudo` in front of it.'],
+ answer:'sudo !!',
+ explain:'`!!` expands to the entire previous command line — a fast way to redo something with `sudo` tacked on after forgetting it the first time.',
+ check:{terms:[/sudo\s+!!/]}},
+{id:'d26',section:'dev',difficulty:'basic',
+ prompt:'Search backward through your shell history interactively, narrowing results as you type — instead of pressing the up arrow repeatedly.',
+ hints:['It\'s a keyboard shortcut, not a typed word.','Hold Ctrl and press a letter that stands for "reverse".'],
+ answer:'Ctrl+R',
+ explain:'Opens a reverse incremental search (`(reverse-i-search)`) — keep typing to narrow the match, press Ctrl+R again to cycle to the next older match, Enter to run it.',
+ check:{terms:[/ctrl\s*\+?\s*r|\^r|c-r/i]}},
+{id:'d27',section:'dev',difficulty:'basic',
+ prompt:'Clear all the clutter currently shown in your terminal window.',
+ hints:['A short command name, or a keyboard shortcut works too.','Command: `clear`. Shortcut: Ctrl+L.'],
+ answer:'clear   (or Ctrl+L)',
+ explain:'`clear` (and the Ctrl+L shortcut) just scrolls the visible screen away — your actual scrollback history is still there if you scroll up.',
+ check:{anyOf:[/^clear\b/i, /ctrl\s*\+?\s*l|\^l|c-l/i]}},
+{id:'d28',section:'dev',difficulty:'basic',
+ prompt:'Inside Vim, in normal mode: jump straight to the first line of the file.',
+ hints:['The opposite of `G`, which jumps to the last line.','Two lowercase letters, the same letter twice.'],
+ answer:'gg',
+ explain:'`gg` jumps to line 1; `G` jumps to the last line. A number before either (e.g. `15gg` or `15G`) jumps to that specific line instead.',
+ check:{terms:[/^gg$/]}},
+{id:'d29',section:'dev',difficulty:'intermediate',
+ prompt:'Inside Vim, in normal mode: jump to the very start of the current line, then jump to its very end.',
+ hints:['Start of line: a single digit.','End of line: a punctuation character.'],
+ answer:'0 then $',
+ explain:'`0` moves to column 1 of the line (including leading whitespace); `^` moves to the first non-blank character instead. `$` moves to the last character of the line.',
+ check:{terms:[/\b0\b/, /\$/]}},
+{id:'d30',section:'dev',difficulty:'intermediate',
+ prompt:'Inside Vim, in normal mode: move forward to the start of the next word, then back to the start of the previous word.',
+ hints:['Forward word: one lowercase letter.','Backward word: another lowercase letter.'],
+ answer:'w then b',
+ explain:'`w` jumps to the start of the next word, `b` jumps back to the start of the previous one — `e` (jump to the end of the current/next word) rounds out the set.',
+ check:{terms:[/\bw\b/, /\bb\b/]}},
+{id:'d31',section:'dev',difficulty:'advanced',
+ prompt:'Inside Vim: scroll forward a full page, then scroll back a full page.',
+ hints:['Both are Ctrl + a letter.','Forward: Ctrl+F. Backward: Ctrl+B.'],
+ answer:'Ctrl+F then Ctrl+B',
+ explain:'Ctrl+F/Ctrl+B page forward/back a full screen; Ctrl+D/Ctrl+U do a half-page instead, if a full page feels like too much.',
+ check:{terms:[/ctrl\s*\+?\s*f|\^f|c-f/i, /ctrl\s*\+?\s*b|\^b|c-b/i]}},
+{id:'d32',section:'dev',difficulty:'intermediate',
+ prompt:'Inside Vim, with the cursor sitting on a `{`, jump straight to its matching `}`.',
+ hints:['A single punctuation character.'],
+ answer:'%',
+ explain:'`%` jumps between matching pairs — `()`, `[]`, `{}` — from whichever one the cursor is currently on. Great for navigating nested code blocks.',
+ check:{terms:[/^%$/]}},
+];
+
+/* ---------- validation engine ---------- */
+function evalCommand(input, check){
+  if(!check) return false;
+  const norm = input.trim().replace(/\s+/g,' ');
+  if(!norm) return false;
+  if(check.base && !check.base.test(norm)) return false;
+  if(check.forbid && check.forbid.some(r=>r.test(norm))) return false;
+  if(check.flags && check.flags.length){
+    const letters = new Set();
+    const re = /(^|\s)-([a-zA-Z]+)(?=\s|$)/g;
+    let m;
+    while((m = re.exec(norm))){ for(const ch of m[2]) letters.add(ch); }
+    for(const f of check.flags) if(!letters.has(f)) return false;
+  }
+  if(check.long && !check.long.every(r=>r.test(norm))) return false;
+  if(check.terms && !check.terms.every(r=>r.test(norm))) return false;
+  if(check.anyOf && !check.anyOf.some(r=>r.test(norm))) return false;
+  return true;
+}
+
+/* ---------- persistence ---------- */
+const STORAGE_KEY = 'command-drill-progress-v1';
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveProgress(p){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }catch(e){}
+}
+let progress = loadProgress();
+
+function getRec(qid){
+  return progress[qid] || {status:'unseen', attempts:0, hintsShown:0};
+}
+function setRec(qid, patch){
+  progress[qid] = Object.assign(getRec(qid), patch);
+  saveProgress(progress);
+}
+
+/* ---------- state ---------- */
+let currentSection = 'git';
+let currentStatusFilter = 'all';
+let currentDiffFilter = 'all';
+let mode = 'practice';
+let queue = [];
+let qi = 0;
+let currentHintIndex = 0;
+let answered = false;
+
+const STATUS_FILTERS = [
+  {id:'all', label:'All'},
+  {id:'weak', label:'Weak spots'},
+  {id:'new', label:'Not yet tried'},
+];
+
+const DIFF_FILTERS = [
+  {id:'all', label:'All levels'},
+  {id:'basic', label:'Basic'},
+  {id:'intermediate', label:'Intermediate'},
+  {id:'advanced', label:'Advanced'},
+];
+
+const MODES = [
+  {id:'practice', label:'Practice'},
+  {id:'learn', label:'Learn — browse all'},
+];
+
+function questionsFor(sectionId){ return Q.filter(q=>q.section===sectionId); }
+
+function statusOf(qid){ return getRec(qid).status; }
+
+function matchesFilters(q){
+  const st = statusOf(q.id);
+  const statusOk =
+    currentStatusFilter==='all' ? true :
+    currentStatusFilter==='weak' ? (st==='wrong' || st==='revealed') :
+    currentStatusFilter==='new' ? (st==='unseen' || !st) : true;
+  const diffOk = currentDiffFilter==='all' || q.difficulty===currentDiffFilter;
+  return statusOk && diffOk;
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildQueue(){
+  const pool = questionsFor(currentSection).filter(q=>matchesFilters(q));
+  queue = shuffle(pool);
+  qi = 0;
+}
+
+/* ---------- rendering ---------- */
+const elTabs = document.getElementById('section-tabs');
+const elModeChips = document.getElementById('mode-chips');
+const elPracticeToolbar = document.getElementById('practice-toolbar');
+const elChips = document.getElementById('filter-chips');
+const elDiffChips = document.getElementById('diff-chips');
+const elCard = document.getElementById('card');
+const elCounter = document.getElementById('qcounter');
+const elDone = document.getElementById('done-footer');
+const elLearnWrap = document.getElementById('learn-wrap');
+const elAccuracy = document.getElementById('stat-accuracy');
+const elMastered = document.getElementById('stat-mastered');
+
+function sectionStats(sectionId){
+  const qs = questionsFor(sectionId);
+  const mastered = qs.filter(q=>statusOf(q.id)==='correct').length;
+  return {mastered, total:qs.length};
+}
+
+function globalStats(){
+  const mastered = Q.filter(q=>statusOf(q.id)==='correct').length;
+  let attempts=0, correct=0;
+  Q.forEach(q=>{
+    const r = getRec(q.id);
+    if(r.attempts) attempts += r.attempts;
+    if(r.status==='correct') correct += 1;
+  });
+  return {mastered, total:Q.length, accuracy: attempts ? Math.round(100*correct/Math.max(correct, Math.min(attempts,Q.length)) ) : null, attempts, correct};
+}
+
+function renderTopStats(){
+  const qs = questionsFor(currentSection);
+  const mastered = qs.filter(q=>statusOf(q.id)==='correct').length;
+  elMastered.textContent = mastered + '/' + qs.length;
+  let seenCorrect=0, seenTotal=0;
+  Q.forEach(q=>{ const r=getRec(q.id); if(r.status==='correct') seenCorrect++; if(r.status!=='unseen') seenTotal++; });
+  elAccuracy.textContent = seenTotal ? Math.round(100*seenCorrect/seenTotal)+'%' : '–';
+}
+
+function renderTabs(){
+  elTabs.innerHTML = '';
+  SECTIONS.forEach(s=>{
+    const {mastered,total} = sectionStats(s.id);
+    const pct = total ? Math.round(100*mastered/total) : 0;
+    const btn = document.createElement('button');
+    btn.className = 'section-tab' + (s.id===currentSection ? ' active' : '');
+    btn.innerHTML = `<span class="name"><span>${s.icon} ${s.name}</span><span class="count">${mastered}/${total}</span></span>
+      <span class="bar"><span style="width:${pct}%"></span></span>`;
+    btn.addEventListener('click', ()=>{
+      currentSection = s.id;
+      buildQueue();
+      renderAll();
+    });
+    elTabs.appendChild(btn);
+  });
+}
+
+function renderModeChips(){
+  elModeChips.innerHTML = '';
+  MODES.forEach(m=>{
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (m.id===mode ? ' active' : '');
+    chip.textContent = m.label;
+    chip.addEventListener('click', ()=>{
+      mode = m.id;
+      renderAll();
+    });
+    elModeChips.appendChild(chip);
+  });
+}
+
+const DIFF_ORDER = {basic:0, intermediate:1, advanced:2};
+
+function renderLearnList(){
+  const qs = questionsFor(currentSection).slice().sort((a,b)=>DIFF_ORDER[a.difficulty]-DIFF_ORDER[b.difficulty]);
+  const sectionName = (SECTIONS.find(s=>s.id===currentSection)||{}).name || '';
+  let html = `<div class="learn-title">Learn — ${sectionName}<span class="learn-sub">Browse every command, its answer, and why — no typing required.</span></div>`;
+  let lastDiff = null;
+  qs.forEach(q=>{
+    if(q.difficulty !== lastDiff){
+      html += `<h3 class="learn-heading">${q.difficulty}</h3>`;
+      lastDiff = q.difficulty;
+    }
+    html += `<div class="learn-item">
+      <div class="learn-head"><span class="badge ${q.difficulty}">${q.difficulty}</span><span class="qid">${q.id}</span></div>
+      <div class="learn-prompt">${q.prompt}</div>
+      <span class="answer-box">${q.answer}</span>
+      ${q.explain ? `<div class="explain">${q.explain}</div>` : ''}
+      ${q.note ? `<div class="note">${q.note}</div>` : ''}
+    </div>`;
+  });
+  elLearnWrap.innerHTML = html;
+}
+
+function renderChips(){
+  elChips.innerHTML = '';
+  STATUS_FILTERS.forEach(f=>{
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (f.id===currentStatusFilter ? ' active' : '');
+    chip.textContent = f.label;
+    chip.addEventListener('click', ()=>{
+      currentStatusFilter = f.id;
+      buildQueue();
+      renderAll();
+    });
+    elChips.appendChild(chip);
+  });
+
+  elDiffChips.innerHTML = '';
+  DIFF_FILTERS.forEach(f=>{
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (f.id===currentDiffFilter ? ' active' : '');
+    chip.textContent = f.label;
+    chip.addEventListener('click', ()=>{
+      currentDiffFilter = f.id;
+      buildQueue();
+      renderAll();
+    });
+    elDiffChips.appendChild(chip);
+  });
+}
+
+function renderCounter(){
+  elCounter.textContent = queue.length ? `Question ${qi+1} of ${queue.length}` : '';
+}
+
+function currentQuestion(){ return queue[qi]; }
+
+function renderCard(){
+  elDone.classList.remove('show');
+  const q = currentQuestion();
+  if(!q){
+    elCard.innerHTML = '';
+    elDone.classList.add('show');
+    elDone.textContent = 'Nothing matches these filters in this section — try widening the status or level filter.';
+    return;
+  }
+  answered = false;
+  currentHintIndex = getRec(q.id).hintsShown || 0;
+
+  elCard.innerHTML = `
+    <div class="card-head">
+      <span class="badge ${q.difficulty}">${q.difficulty}</span>
+      <span class="qid">${q.id}</span>
+    </div>
+    <div class="prompt">${q.prompt}</div>
+    <div class="prompt-line">
+      <span class="dollar">$</span>
+      <input id="cmd-input" class="mono" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type the command..." />
+    </div>
+    <div class="btnrow">
+      <button class="act primary" id="btn-check">Check</button>
+      <button class="act" id="btn-hint">Hint (${currentHintIndex}/${q.hints.length})</button>
+      <button class="act" id="btn-reveal">Show answer</button>
+      <button class="act" id="btn-prev">← Prev</button>
+      <button class="act" id="btn-next">Next →</button>
+    </div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="feedback" id="feedback"></div>
+  `;
+
+  const input = document.getElementById('cmd-input');
+  const btnCheck = document.getElementById('btn-check');
+  const btnHint = document.getElementById('btn-hint');
+  const btnReveal = document.getElementById('btn-reveal');
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  const hintBox = document.getElementById('hint-box');
+  const feedback = document.getElementById('feedback');
+
+  if(currentHintIndex>0) renderHints();
+  input.focus();
+
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') doCheck(); });
+  btnCheck.addEventListener('click', doCheck);
+  btnHint.addEventListener('click', doHint);
+  btnReveal.addEventListener('click', doReveal);
+  btnPrev.addEventListener('click', ()=>{
+    qi = (qi-1+queue.length) % queue.length;
+    renderCard();
+    renderTopStats();
+    renderTabs();
+    renderCounter();
+  });
+  btnNext.addEventListener('click', ()=>{
+    qi = (qi+1) % queue.length;
+    if(qi===0) buildQueue();
+    renderCard();
+    renderTopStats();
+    renderTabs();
+    renderCounter();
+  });
+
+  function renderHints(){
+    hintBox.innerHTML = q.hints.slice(0, currentHintIndex).map(h=>`<div>💡 ${h}</div>`).join('');
+    hintBox.classList.toggle('show', currentHintIndex>0);
+    btnHint.textContent = `Hint (${currentHintIndex}/${q.hints.length})`;
+    btnHint.disabled = currentHintIndex>=q.hints.length;
+  }
+
+  function doHint(){
+    if(currentHintIndex < q.hints.length){
+      currentHintIndex++;
+      setRec(q.id, {hintsShown: currentHintIndex});
+      renderHints();
+    }
+  }
+
+  function showFeedback(kind, html){
+    feedback.className = 'feedback show ' + kind;
+    feedback.innerHTML = html;
+  }
+
+  function answerBlock(){
+    return `<span class="answer-box">${q.answer}</span>${q.explain ? `<div class="explain">${q.explain}</div>` : ''}${q.note ? `<div class="note">${q.note}</div>` : ''}`;
+  }
+
+  function doCheck(){
+    const val = input.value;
+    if(!val.trim()) return;
+    const rec = getRec(q.id);
+    const ok = evalCommand(val, q.check);
+    setRec(q.id, {attempts:(rec.attempts||0)+1, status: ok ? 'correct' : (rec.status==='correct' ? 'correct' : 'wrong')});
+    if(ok){
+      showFeedback('good', `✓ Correct.${answerBlock()}`);
+    }else{
+      showFeedback('bad', `✗ Not quite — check the flags/arguments and try again, or use a hint.`);
+    }
+    answered = true;
+    renderTopStats();
+    renderTabs();
+  }
+
+  function doReveal(){
+    const rec = getRec(q.id);
+    setRec(q.id, {status: rec.status==='correct' ? 'correct' : 'revealed'});
+    showFeedback('info', `Answer:${answerBlock()}`);
+    answered = true;
+    renderTopStats();
+    renderTabs();
+  }
+}
+
+function renderAll(){
+  renderTabs();
+  renderModeChips();
+  renderTopStats();
+
+  const inPractice = mode==='practice';
+  elPracticeToolbar.hidden = !inPractice;
+  elCard.hidden = !inPractice;
+  elLearnWrap.hidden = inPractice;
+
+  if(inPractice){
+    renderChips();
+    renderCounter();
+    renderCard();
+  }else{
+    elDone.classList.remove('show');
+    renderLearnList();
+  }
+}
+
+/* native confirm()/alert() are unreliable inside a sandboxed artifact frame,
+   so reset uses an explicit two-click arm/confirm pattern instead. */
+const resetBtn = document.getElementById('reset-btn');
+let resetArmed = false;
+let resetTimer = null;
+function disarmReset(){
+  resetArmed = false;
+  clearTimeout(resetTimer);
+  resetBtn.textContent = 'Reset progress';
+  resetBtn.classList.remove('confirm');
+}
+resetBtn.addEventListener('click', ()=>{
+  if(!resetArmed){
+    resetArmed = true;
+    resetBtn.textContent = 'Click again to confirm';
+    resetBtn.classList.add('confirm');
+    resetTimer = setTimeout(disarmReset, 4000);
+  }else{
+    progress = {};
+    saveProgress(progress);
+    disarmReset();
+    renderAll();
+  }
+});
+
+buildQueue();
+renderAll();
+})();
+</script>
