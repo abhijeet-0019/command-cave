@@ -91,6 +91,39 @@
   }
   .reset-btn:hover{ border-color:var(--bad); color:var(--bad); }
   .reset-btn.confirm{ border-color:var(--bad); color:var(--bad); font-weight:700; background:var(--bad-bg); }
+  .reset-btn.toggled{ border-color:var(--accent); color:var(--accent); }
+
+  .backup-panel{
+    display:flex; flex-direction:column; gap:16px;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:16px; margin-top:14px;
+  }
+  .backup-col{ display:flex; flex-direction:column; gap:6px; }
+  .backup-label{ font-size:.78rem; color:var(--text-dim); }
+  .backup-panel textarea{
+    width:100%; min-height:90px; resize:vertical; background:var(--code-bg);
+    border:1px solid var(--border); border-radius:8px; padding:8px 10px; color:var(--text); font-size:.78rem;
+    line-height:1.4;
+  }
+  .backup-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .backup-status{ font-size:.78rem; color:var(--text-dim); }
+  .backup-status.ok{ color:var(--good); }
+  .backup-status.err{ color:var(--bad); }
+
+  .star-btn{
+    background:none; border:none; cursor:pointer; font-size:1.05rem; line-height:1;
+    color:var(--text-dim); padding:2px 4px;
+  }
+  .star-btn.active{ color:var(--accent); }
+
+  .usernote-wrap{ display:flex; flex-direction:column; gap:4px; }
+  .usernote-label{ font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); }
+  .usernote{
+    width:100%; min-height:54px; resize:vertical; background:var(--surface-2);
+    border:1px solid var(--border); border-radius:8px; padding:8px 10px; color:var(--text); font-size:.83rem;
+    line-height:1.45;
+  }
+  .learn-item .usernote{ min-height:44px; }
 
   nav.sections{
     display:flex; gap:10px; margin-block:16px; flex-wrap:wrap;
@@ -218,11 +251,29 @@
     <div class="tag">Practice recalling <span class="accentword">git</span>, <span class="accentword">linux/EC2/docker</span> and <span class="accentword">dev</span> commands from memory — no autocomplete.</div>
   </div>
   <div class="global-stats">
-    <div class="stat"><div class="num" id="stat-accuracy">–</div><div class="lbl">Accuracy</div></div>
+    <div class="stat"><div class="num" id="stat-session">–</div><div class="lbl">Session</div></div>
+    <div class="stat"><div class="num" id="stat-accuracy">–</div><div class="lbl">All-time</div></div>
     <div class="stat"><div class="num" id="stat-mastered">0/0</div><div class="lbl">Mastered</div></div>
+    <button class="reset-btn" id="backup-btn" title="Export or import your progress as JSON">Backup</button>
     <button class="reset-btn" id="reset-btn" title="Clear all saved progress on this device">Reset progress</button>
   </div>
 </header>
+
+<div class="backup-panel" id="backup-panel" hidden>
+  <div class="backup-col">
+    <div class="backup-label">Export — click inside the box (it auto-selects), press Ctrl+C to copy, then paste into a file (e.g. <code>progress.json</code>) to save it.</div>
+    <textarea id="export-area" class="mono" readonly></textarea>
+  </div>
+  <div class="backup-col">
+    <div class="backup-label">Import — paste previously exported JSON below, or choose a saved file.</div>
+    <textarea id="import-area" class="mono" placeholder="Paste exported JSON here..."></textarea>
+    <div class="backup-row">
+      <input type="file" id="import-file" accept="application/json,.json" />
+      <button class="act" id="import-btn">Load pasted / chosen JSON</button>
+      <span class="backup-status" id="backup-status"></span>
+    </div>
+  </div>
+</div>
 
 <nav class="sections" id="section-tabs"></nav>
 
@@ -863,11 +914,15 @@ function saveProgress(p){
 let progress = loadProgress();
 
 function getRec(qid){
-  return progress[qid] || {status:'unseen', attempts:0, hintsShown:0};
+  return progress[qid] || {status:'unseen', attempts:0, correctCount:0, streak:0, hintsShown:0, note:'', bookmarked:false};
 }
 function setRec(qid, patch){
   progress[qid] = Object.assign(getRec(qid), patch);
   saveProgress(progress);
+}
+function isMastered(qid){ return (getRec(qid).streak||0) >= 3; }
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 /* ---------- state ---------- */
@@ -879,11 +934,14 @@ let queue = [];
 let qi = 0;
 let currentHintIndex = 0;
 let answered = false;
+/* session stats live only in memory — reset every time the page loads, unlike progress */
+let sessionStats = {attempted:0, correct:0};
 
 const STATUS_FILTERS = [
   {id:'all', label:'All'},
   {id:'weak', label:'Weak spots'},
   {id:'new', label:'Not yet tried'},
+  {id:'bookmarked', label:'★ Bookmarked'},
 ];
 
 const DIFF_FILTERS = [
@@ -907,7 +965,8 @@ function matchesFilters(q){
   const statusOk =
     currentStatusFilter==='all' ? true :
     currentStatusFilter==='weak' ? (st==='wrong' || st==='revealed') :
-    currentStatusFilter==='new' ? (st==='unseen' || !st) : true;
+    currentStatusFilter==='new' ? (st==='unseen' || !st) :
+    currentStatusFilter==='bookmarked' ? !!getRec(q.id).bookmarked : true;
   const diffOk = currentDiffFilter==='all' || q.difficulty===currentDiffFilter;
   return statusOk && diffOk;
 }
@@ -939,31 +998,27 @@ const elDone = document.getElementById('done-footer');
 const elLearnWrap = document.getElementById('learn-wrap');
 const elAccuracy = document.getElementById('stat-accuracy');
 const elMastered = document.getElementById('stat-mastered');
+const elSession = document.getElementById('stat-session');
 
 function sectionStats(sectionId){
   const qs = questionsFor(sectionId);
-  const mastered = qs.filter(q=>statusOf(q.id)==='correct').length;
+  const mastered = qs.filter(q=>isMastered(q.id)).length;
   return {mastered, total:qs.length};
 }
 
-function globalStats(){
-  const mastered = Q.filter(q=>statusOf(q.id)==='correct').length;
-  let attempts=0, correct=0;
+function renderTopStats(){
+  const {mastered, total} = sectionStats(currentSection);
+  elMastered.textContent = mastered + '/' + total;
+
+  let allAttempts=0, allCorrect=0;
   Q.forEach(q=>{
     const r = getRec(q.id);
-    if(r.attempts) attempts += r.attempts;
-    if(r.status==='correct') correct += 1;
+    allAttempts += (r.attempts||0);
+    allCorrect += (r.correctCount||0);
   });
-  return {mastered, total:Q.length, accuracy: attempts ? Math.round(100*correct/Math.max(correct, Math.min(attempts,Q.length)) ) : null, attempts, correct};
-}
+  elAccuracy.textContent = allAttempts ? Math.round(100*allCorrect/allAttempts)+'%' : '–';
 
-function renderTopStats(){
-  const qs = questionsFor(currentSection);
-  const mastered = qs.filter(q=>statusOf(q.id)==='correct').length;
-  elMastered.textContent = mastered + '/' + qs.length;
-  let seenCorrect=0, seenTotal=0;
-  Q.forEach(q=>{ const r=getRec(q.id); if(r.status==='correct') seenCorrect++; if(r.status!=='unseen') seenTotal++; });
-  elAccuracy.textContent = seenTotal ? Math.round(100*seenCorrect/seenTotal)+'%' : '–';
+  elSession.textContent = sessionStats.attempted ? `${sessionStats.correct}/${sessionStats.attempted}` : '–';
 }
 
 function renderTabs(){
@@ -1010,15 +1065,37 @@ function renderLearnList(){
       html += `<h3 class="learn-heading">${q.difficulty}</h3>`;
       lastDiff = q.difficulty;
     }
+    const rec = getRec(q.id);
     html += `<div class="learn-item">
-      <div class="learn-head"><span class="badge ${q.difficulty}">${q.difficulty}</span><span class="qid">${q.id}</span></div>
+      <div class="learn-head">
+        <span class="badge ${q.difficulty}">${q.difficulty}</span>
+        <button class="star-btn${rec.bookmarked ? ' active' : ''}" data-star="${q.id}" title="Bookmark this command">${rec.bookmarked ? '★' : '☆'}</button>
+        <span class="qid">${q.id}</span>
+      </div>
       <div class="learn-prompt">${q.prompt}</div>
       <span class="answer-box">${q.answer}</span>
       ${q.explain ? `<div class="explain">${q.explain}</div>` : ''}
       ${q.note ? `<div class="note">${q.note}</div>` : ''}
+      <textarea class="usernote mono" data-note="${q.id}" placeholder="Your notes...">${escapeHtml(rec.note)}</textarea>
     </div>`;
   });
   elLearnWrap.innerHTML = html;
+
+  elLearnWrap.querySelectorAll('[data-star]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const qid = btn.getAttribute('data-star');
+      const r = getRec(qid);
+      setRec(qid, {bookmarked: !r.bookmarked});
+      const bm = getRec(qid).bookmarked;
+      btn.textContent = bm ? '★' : '☆';
+      btn.classList.toggle('active', bm);
+    });
+  });
+  elLearnWrap.querySelectorAll('[data-note]').forEach(ta=>{
+    ta.addEventListener('input', ()=>{
+      setRec(ta.getAttribute('data-note'), {note: ta.value});
+    });
+  });
 }
 
 function renderChips(){
@@ -1067,9 +1144,11 @@ function renderCard(){
   answered = false;
   currentHintIndex = getRec(q.id).hintsShown || 0;
 
+  const rec0 = getRec(q.id);
   elCard.innerHTML = `
     <div class="card-head">
       <span class="badge ${q.difficulty}">${q.difficulty}</span>
+      <button class="star-btn${rec0.bookmarked ? ' active' : ''}" id="btn-bookmark" title="Bookmark this command">${rec0.bookmarked ? '★' : '☆'}</button>
       <span class="qid">${q.id}</span>
     </div>
     <div class="prompt">${q.prompt}</div>
@@ -1086,6 +1165,10 @@ function renderCard(){
     </div>
     <div class="hint-box" id="hint-box"></div>
     <div class="feedback" id="feedback"></div>
+    <div class="usernote-wrap">
+      <label class="usernote-label" for="note-input">Your notes</label>
+      <textarea id="note-input" class="usernote mono" placeholder="Mnemonics, gotchas, extra flags you want to remember..."></textarea>
+    </div>
   `;
 
   const input = document.getElementById('cmd-input');
@@ -1094,8 +1177,20 @@ function renderCard(){
   const btnReveal = document.getElementById('btn-reveal');
   const btnPrev = document.getElementById('btn-prev');
   const btnNext = document.getElementById('btn-next');
+  const btnBookmark = document.getElementById('btn-bookmark');
+  const noteInput = document.getElementById('note-input');
   const hintBox = document.getElementById('hint-box');
   const feedback = document.getElementById('feedback');
+
+  noteInput.value = rec0.note || '';
+  noteInput.addEventListener('input', ()=>{ setRec(q.id, {note: noteInput.value}); });
+  btnBookmark.addEventListener('click', ()=>{
+    const r = getRec(q.id);
+    setRec(q.id, {bookmarked: !r.bookmarked});
+    const bm = getRec(q.id).bookmarked;
+    btnBookmark.textContent = bm ? '★' : '☆';
+    btnBookmark.classList.toggle('active', bm);
+  });
 
   if(currentHintIndex>0) renderHints();
   input.focus();
@@ -1149,11 +1244,26 @@ function renderCard(){
     if(!val.trim()) return;
     const rec = getRec(q.id);
     const ok = evalCommand(val, q.check);
-    setRec(q.id, {attempts:(rec.attempts||0)+1, status: ok ? 'correct' : (rec.status==='correct' ? 'correct' : 'wrong')});
+    const prevStreak = rec.streak||0;
+    const newStreak = ok ? prevStreak+1 : 0;
+    setRec(q.id, {
+      attempts:(rec.attempts||0)+1,
+      correctCount:(rec.correctCount||0) + (ok?1:0),
+      streak:newStreak,
+      status: ok ? 'correct' : 'wrong',
+    });
+    sessionStats.attempted++;
+    if(ok) sessionStats.correct++;
+
     if(ok){
-      showFeedback('good', `✓ Correct.${answerBlock()}`);
+      const justMastered = prevStreak<3 && newStreak>=3;
+      const streakMsg = justMastered ? ' <b>🏅 Mastered!</b> (3 correct in a row)'
+        : newStreak>=3 ? ' Still mastered.'
+        : ` Streak ${newStreak}/3 toward mastery.`;
+      showFeedback('good', `✓ Correct.${streakMsg}${answerBlock()}`);
     }else{
-      showFeedback('bad', `✗ Not quite — check the flags/arguments and try again, or use a hint.`);
+      const streakLost = prevStreak>0 ? ' Streak reset.' : '';
+      showFeedback('bad', `✗ Not quite.${streakLost} Check the flags/arguments and try again, or use a hint.`);
     }
     answered = true;
     renderTopStats();
@@ -1161,8 +1271,7 @@ function renderCard(){
   }
 
   function doReveal(){
-    const rec = getRec(q.id);
-    setRec(q.id, {status: rec.status==='correct' ? 'correct' : 'revealed'});
+    setRec(q.id, {status:'revealed', streak:0});
     showFeedback('info', `Answer:${answerBlock()}`);
     answered = true;
     renderTopStats();
@@ -1190,6 +1299,65 @@ function renderAll(){
   }
 }
 
+/* ---------- backup: export/import (no window.confirm/alert — see reset below for why) ---------- */
+const backupBtn = document.getElementById('backup-btn');
+const backupPanel = document.getElementById('backup-panel');
+const exportArea = document.getElementById('export-area');
+const importArea = document.getElementById('import-area');
+const importFile = document.getElementById('import-file');
+const importBtn = document.getElementById('import-btn');
+const backupStatus = document.getElementById('backup-status');
+
+function refreshExportArea(){
+  const payload = {version:1, exportedAt:new Date().toISOString(), progress};
+  exportArea.value = JSON.stringify(payload, null, 2);
+}
+
+backupBtn.addEventListener('click', ()=>{
+  backupPanel.hidden = !backupPanel.hidden;
+  backupBtn.classList.toggle('toggled', !backupPanel.hidden);
+  if(!backupPanel.hidden){
+    refreshExportArea();
+    exportArea.focus();
+    exportArea.select();
+  }
+});
+
+function setBackupStatus(msg, kind){
+  backupStatus.textContent = msg;
+  backupStatus.className = 'backup-status' + (kind ? ' '+kind : '');
+}
+
+function applyImport(text){
+  let parsed;
+  try{ parsed = JSON.parse(text); }
+  catch(e){ setBackupStatus('Could not import — that\'s not valid JSON.', 'err'); return; }
+  const incoming = (parsed && typeof parsed==='object' && parsed.progress && typeof parsed.progress==='object')
+    ? parsed.progress : parsed;
+  if(!incoming || typeof incoming!=='object' || Array.isArray(incoming)){
+    setBackupStatus('Could not import — unrecognized format.', 'err');
+    return;
+  }
+  progress = Object.assign({}, progress, incoming);
+  saveProgress(progress);
+  setBackupStatus(`Imported ${Object.keys(incoming).length} record(s).`, 'ok');
+  refreshExportArea();
+  renderAll();
+}
+
+importBtn.addEventListener('click', ()=>{
+  if(!importArea.value.trim()){ setBackupStatus('Paste JSON or choose a file first.', 'err'); return; }
+  applyImport(importArea.value);
+});
+importFile.addEventListener('change', ()=>{
+  const file = importFile.files && importFile.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{ importArea.value = String(reader.result||''); applyImport(importArea.value); };
+  reader.onerror = ()=> setBackupStatus('Could not read that file.', 'err');
+  reader.readAsText(file);
+});
+
 /* native confirm()/alert() are unreliable inside a sandboxed artifact frame,
    so reset uses an explicit two-click arm/confirm pattern instead. */
 const resetBtn = document.getElementById('reset-btn');
@@ -1211,6 +1379,7 @@ resetBtn.addEventListener('click', ()=>{
     progress = {};
     saveProgress(progress);
     disarmReset();
+    if(!backupPanel.hidden) refreshExportArea();
     renderAll();
   }
 });
